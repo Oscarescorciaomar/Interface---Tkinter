@@ -1,0 +1,230 @@
+from tkinter import *
+from tkinter import messagebox
+from tkinter import ttk
+import sqlite3
+
+#Development Interface
+
+
+root = Tk()
+root.title("Aplicacion Inventario Reactivos Quimicos - Lab. Q112,  Creado por: Oscar Escorcia")
+root.geometry("1200x400")
+
+
+miId=StringVar()
+miNombre=StringVar()
+miFechadeingreso=StringVar()
+miIngresado=StringVar()
+milocalizacion=StringVar()
+miCasNumber=StringVar()
+miCantidad=StringVar()
+
+
+def conexionBBDD():
+    miConexion= sqlite3.connect("base")
+    miCursor= miConexion.cursor()
+
+    try:
+        miCursor.execute('''
+           CREATE TABLE empleado(
+           ID INTEGER PRIMARY KEY AUTOINCREMENT,
+           NOMBRE VARCHAR(100) NOT NULL,
+           Fecha de ingreso VARCHAR(100) NOT NULL,
+           Ingresado VARCHAR(100) NOT NULL,
+           localizacion VARCHAR(100) NOT NULL,
+           Cas Number VARCHAR(100)  NOT NULL,
+           Cantidad INT NOT NULL)
+            ''')
+        messagebox.showinfo("CONEXION", "Base de Datos Creada exitosamente")
+    except:
+        messagebox.showinfo("CONEXION","Conexion exitosa con la base de datos")
+
+def eliminarBBDD():
+    miConexion=sqlite3.connect("base")
+    miCursor= miConexion.cursor()
+    if messagebox.askyesno(message="¿Los datos se perderan definitivamente, Desea continuar?", title="ADVERTENCIA"):
+        miCursor.execute("DROP TABLE empleado")
+    else:
+        pass
+    limpiarCampos()
+    mostrar()
+
+
+def salirAplicacion():
+    valor=messagebox.askquestion("Salir","¿Estas seguro que deseas salir de la Aplicacion?")
+    if valor=="yes":
+        root.destroy()
+
+def limpiarCampos():
+    miId.set("")
+    miNombre.set("")
+    miFechadeingreso.set("")
+    miIngresado.set("")
+    milocalizacion.set("")
+    miCasNumber.set("")
+    miCantidad.set("")
+
+
+
+def mensaje():
+    acerca='''
+    Aplicacion Para Inventario de Reactivos Quimicos
+    Version 1.0
+    Tecnologia Python Tkinter
+    '''
+    messagebox.showinfo(title='INFORMACION', message=acerca)
+
+
+def crear():
+    miConexion=sqlite3.connect("base")
+    miCursor=miConexion.cursor()
+    try:
+        datos=miNombre.get(),miFechadeingreso.get(), miIngresado.get(), milocalizacion.get(),miCasNumber.get(), miCantidad.get()
+        miCursor.execute("INSERT INTO empleado VALUES(NULL,?,?,?,?,?,?)",(datos))
+        miConexion.commit()
+    except:
+        messagebox.showwarning("ADVERTENCIA","Ocurrio un error al crear el registro, verifique conexion con BBDD")
+        pass
+
+    limpiarCampos()
+    mostrar()
+
+def mostrar():
+    miConexion = sqlite3.connect("base")
+    miCursor = miConexion.cursor()
+    registros=tree.get_children()
+    for elemento in registros:
+        tree.delete(elemento)
+
+
+    try:
+        miCursor.execute("SELECT * FROM empleado")
+        for row in miCursor:
+            tree.insert("",0,text=row[0], values=(row[1], row[2],row[3], row[4], row[5], row[6]))
+    except:
+        pass
+
+tree=ttk.Treeview(height=10, columns=('#0','#1','#2', '#3', '#4','#5','#6'))
+tree.place(x=0, y=130)
+tree.column('#0', width=100)
+tree.heading('#0', text="ID", anchor=CENTER)
+tree.heading('#1', text="Nombre", anchor=CENTER)
+tree.heading('#2', text="Fecha de ingreso", anchor=CENTER)
+tree.heading('#3', text="Ingresado", anchor=CENTER)
+tree.heading('#4', text="localizacion", anchor=CENTER)
+tree.heading('#5', text="CAS Number", anchor=CENTER)
+tree.column('#6', width= 100)
+tree.heading('#6', text="Cantidad", anchor=CENTER)
+
+
+
+
+
+
+def seleccionarUsandoClick(event):
+    item=tree.identify('item', event.x, event.y)
+    miId.set(tree.item(item,"text"))
+    miNombre.set(tree.item(item,"values")[0])
+    miFechadeingreso.set(tree.item(item,"values")[1])
+    miIngresado.set(tree.item(item,"values")[2])
+    milocalizacion.set(tree.item(item, "values")[3])
+    miCasNumber.set(tree.item(item, "values")[4])
+    miCantidad.set(tree.item(item, "values")[5])
+
+tree.bind("<Double-1>", seleccionarUsandoClick)
+
+
+
+def actualizar():
+    miConexion = sqlite3.connect("base")
+    miCursor = miConexion.cursor()
+    try:
+        datos= miNombre.get(), miFechadeingreso.get(), miIngresado.get(), milocalizacion.get(), miCasNumber.get(), miCantidad.get()
+        miCursor.execute("UPDATE empleado SET NOMBRE=?, FECHADEINGRESO=?, INGRESADO=?, lOCALIZACION=?, CASNUMBER=?, CANTIDAD=? WHERE ID="+miId.get(), (datos))
+        miConexion.commit()
+    except:
+        messagebox.showwarning("ADVERTENCIA","Ocurrio un error al actualizar el registro")
+        pass
+    limpiarCampos()
+    mostrar()
+
+def borrar():
+    miConexion=sqlite3.connect("base")
+    miCursor=miConexion.cursor()
+    try:
+        if messagebox.askyesno(message="¿Realmente desea eliminar el registro?", title="ADVENTENCIA"):
+            miCursor.execute("DELETE FROM empleado WHERE ID="+miId.get())
+            miConexion.commit()
+    except:
+        messagebox.showwarning("ADVERTENCIA", "Ocurrio un error al tratar de eliminar el registro")
+        pass
+    limpiarCampos()
+    mostrar()
+
+menubar=Menu(root)
+menubasedat=Menu(menubar, tearoff=0)
+menubasedat.add_command(label="Crear/conectar Base de Datos", command=conexionBBDD)
+menubasedat.add_command(label="Eliminar Base de Datos", command=eliminarBBDD)
+menubasedat.add_command(label="Salir", command=salirAplicacion)
+menubar.add_cascade(label="Inicio", menu= menubasedat)
+
+ayudamenu=Menu(menubar,tearoff=0)
+ayudamenu.add_command(label="Resetear Campos", command=limpiarCampos)
+ayudamenu.add_command(label="Acerca", command=mensaje)
+menubar.add_cascade(label="Ayuda", menu=ayudamenu)
+
+root.config(menu=menubar)
+
+e1=Entry(root, textvariable=miId)
+l2=Label(root, text= "Nombre")
+l2.place(x=50, y=10)
+e2=Entry(root, textvariable=miNombre, width=30)
+e2.place(x=100, y=10)
+
+
+l3=Label(root, text= "Fecha de ingreso")
+l3.place(x=400, y=10)
+e3=Entry(root, textvariable=miFechadeingreso)
+e3.place(x=500, y=10)
+
+
+l4=Label(root, text= "Ingresado")
+l4.place(x=700, y=10)
+e4=Entry(root, textvariable=miIngresado, width=30)
+e4.place(x=760, y=10)
+
+l5=Label(root, text= "Localizacion")
+l5.place(x=50, y=40)
+e5=Entry(root, textvariable=milocalizacion, width=30)
+e5.place(x=120, y=40)
+
+l6=Label(root, text= "CAS Number")
+l6.place(x=400, y=40)
+e6=Entry(root, textvariable=miCasNumber, width=10)
+e6.place(x=500, y=40)
+
+
+l6=Label(root, text= "Cantidad")
+l6.place(x=700, y=40)
+e6=Entry(root, textvariable=miCantidad, width=30)
+e6.place(x=760, y=40)
+
+
+
+#l5=Label(root, text= "g")
+#l5.place(x=380, y=40)
+
+
+b1=Button(root, text="Crear Registro", bg="yellow", command=crear)
+b1.place(x=50,y=90)
+
+
+b3=Button(root, text="Mostrar Lista", bg="green", command=mostrar)
+b3.place(x=180, y=90)
+
+b4=Button(root, text="Eliminar Registro", bg="red", command=borrar)
+b4.place(x=320, y=90)
+
+
+
+root.mainloop()
